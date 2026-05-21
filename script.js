@@ -7,6 +7,16 @@ const FIXED_DT      = 1000 / 60; // fixed timestep in ms (60 Hz)
 const MAX_ACCUM     = FIXED_DT * 5; // clamp accumulator to avoid spiral of death
 const SCORE_PER_SEC = 10; // score points earned per second of play
 
+// ── Player Constants ──────────────────────────────────────────────────────
+const PLAYER_X       = 60;                  // fixed horizontal position (px)
+const PLAYER_W       = 44;                  // sprite width (px)
+const PLAYER_H       = 47;                  // sprite height (px)
+const GROUND_Y       = CANVAS_HEIGHT - 2;   // top of ground line
+const PLAYER_FLOOR_Y = GROUND_Y - PLAYER_H; // player y when standing
+const JUMP_VY        = -14;                 // upward velocity on jump (px/tick)
+const GRAVITY        = 0.7;                 // downward acceleration (px/tick²)
+const ANIM_SPEED     = 8;                   // ticks between run-cycle frames
+
 // ── Game States ───────────────────────────────────────────────────────────
 const STATE = Object.freeze({
   IDLE:      'idle',
@@ -36,6 +46,29 @@ let accumulator = 0;
 let score     = 0;
 let bestScore = 0;
 
+// ── Sprites ───────────────────────────────────────────────────────────────
+function loadSprite(src) {
+  const img = new Image();
+  img.src = src;
+  return img;
+}
+
+const sprites = {
+  run1: loadSprite('assets/sprites/trex_run_1.svg'),
+  run2: loadSprite('assets/sprites/trex_run_2.svg'),
+  jump: loadSprite('assets/sprites/trex_jump.svg'),
+};
+
+// ── Player State ──────────────────────────────────────────────────────────
+const player = {
+  x:         PLAYER_X,
+  y:         PLAYER_FLOOR_Y,
+  vy:        0,
+  grounded:  true,
+  animFrame: 0,
+  animTick:  0,
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────
 function formatScore(n) {
   return String(Math.floor(n)).padStart(5, '0');
@@ -54,6 +87,57 @@ function showOverlay(message, btnLabel) {
 
 function hideOverlay() {
   overlay.classList.add('hidden');
+}
+
+// ── Player Functions ─────────────────────────────────────────────────────
+function resetPlayer() {
+  player.x         = PLAYER_X;
+  player.y         = PLAYER_FLOOR_Y;
+  player.vy        = 0;
+  player.grounded  = true;
+  player.animFrame = 0;
+  player.animTick  = 0;
+}
+
+function jump() {
+  if (!player.grounded) return; // prevent double-jump
+  player.vy       = JUMP_VY;
+  player.grounded = false;
+}
+
+function updatePlayer() {
+  player.vy += GRAVITY;
+  player.y  += player.vy;
+
+  // Landing detection
+  if (player.y >= PLAYER_FLOOR_Y) {
+    player.y        = PLAYER_FLOOR_Y;
+    player.vy       = 0;
+    player.grounded = true;
+  }
+
+  // Run-cycle animation (only while grounded)
+  if (player.grounded) {
+    player.animTick++;
+    if (player.animTick >= ANIM_SPEED) {
+      player.animTick  = 0;
+      player.animFrame = 1 - player.animFrame;
+    }
+  }
+}
+
+function drawPlayer() {
+  const sprite = player.grounded
+    ? (player.animFrame === 0 ? sprites.run1 : sprites.run2)
+    : sprites.jump;
+
+  if (sprite.complete && sprite.naturalWidth > 0) {
+    ctx.drawImage(sprite, Math.round(player.x), Math.round(player.y), PLAYER_W, PLAYER_H);
+  } else {
+    // Fallback rectangle until sprites finish loading
+    ctx.fillStyle = '#111';
+    ctx.fillRect(Math.round(player.x), Math.round(player.y), PLAYER_W, PLAYER_H);
+  }
 }
 
 // ── State Machine ─────────────────────────────────────────────────────────
@@ -79,7 +163,7 @@ function reset() {
   score       = 0;
   accumulator = 0;
   updateHUD();
-  // Phase 3+ will reset player / obstacles here
+  resetPlayer();
 }
 
 // ── Transitions ───────────────────────────────────────────────────────────
@@ -111,7 +195,7 @@ function endGame() {
 function fixedUpdate() {
   score += SCORE_PER_SEC * (FIXED_DT / 1000);
   updateHUD();
-  // Phase 3+ will update player and obstacles here
+  updatePlayer();
 }
 
 // ── Render ────────────────────────────────────────────────────────────────
@@ -122,7 +206,7 @@ function render() {
   ctx.fillStyle = '#222';
   ctx.fillRect(0, CANVAS_HEIGHT - 2, CANVAS_WIDTH, 2);
 
-  // Phase 3+ will draw player and obstacles here
+  drawPlayer();
 }
 
 // ── Game Loop (semi-fixed timestep with accumulator) ──────────────────────
@@ -169,7 +253,8 @@ function handlePause() {
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Space' || e.code === 'ArrowUp') {
     e.preventDefault();
-    handleAction();
+    if (state === STATE.RUNNING) jump();
+    else handleAction();
   }
   if (e.code === 'KeyP' || e.code === 'Escape') {
     e.preventDefault();
@@ -183,7 +268,8 @@ document.addEventListener('keydown', (e) => {
 
 canvas.addEventListener('touchstart', (e) => {
   e.preventDefault();
-  handleAction();
+  if (state === STATE.RUNNING) jump();
+  else handleAction();
 }, { passive: false });
 
 overlayBtn.addEventListener('click', () => {
