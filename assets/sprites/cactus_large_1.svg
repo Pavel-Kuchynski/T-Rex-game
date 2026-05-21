@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="25" height="50" viewBox="0 0 25 50">
+  <!-- Main trunk -->
+  <rect x="9" y="5" width="7" height="41" fill="#111"/>
+  <!-- Left branch arm -->
+  <rect x="2" y="18" width="9" height="5" fill="#111"/>
+  <!-- Left branch vertical -->
+  <rect x="2" y="10" width="5" height="13" fill="#111"/>
+  <!-- Right branch arm -->
+  <rect x="14" y="22" width="9" height="5" fill="#111"/>
+  <!-- Right branch vertical -->
+  <rect x="18" y="14" width="5" height="13" fill="#111"/>
+  <!-- Base -->
+  <rect x="8" y="43" width="9" height="6" fill="#111"/>
+</svg>
