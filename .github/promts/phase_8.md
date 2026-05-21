@@ -1,5 +1,7 @@
 # Phase 8 Prompt: Testing and Validation
 
+Status: PENDING
+
 Implement only Phase 8 validation for the T-Rex game.
 
 ## Scope

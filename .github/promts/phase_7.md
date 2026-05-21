@@ -1,5 +1,7 @@
 # Phase 7 Prompt: Persistence and Polish
 
+Status: PENDING
+
 Implement only Phase 7 of the T-Rex game.
 
 ## Scope

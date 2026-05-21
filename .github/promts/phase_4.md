@@ -1,5 +1,7 @@
 # Phase 4 Prompt: Obstacles and World
 
+Status: COMPLETED
+
 Implement only Phase 4 of the T-Rex game.
 
 ## Scope

@@ -1,5 +1,7 @@
 # Phase 1 Prompt: Setup and Skeleton
 
+Status: COMPLETED
+
 Implement only Phase 1 of the T-Rex game using JavaScript, HTML5 Canvas, and CSS.
 
 ## Scope

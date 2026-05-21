@@ -1,5 +1,15 @@
 # T-Rex Game Implementation Plan
 
+## Current Status
+- [x] Phase 1: Setup and Skeleton
+- [x] Phase 2: Core Game Engine
+- [x] Phase 3: Player (T-Rex) Mechanics
+- [x] Phase 4: Obstacles and World
+- [x] Phase 5: Collision, Scoring, and Difficulty
+- [ ] Phase 6: Input and UX (in progress)
+- [ ] Phase 7: Persistence and Polish
+- [ ] Phase 8: Testing and Validation
+
 ## Goal
 Build a browser-based endless runner inspired by the Chrome Dino game using JavaScript, HTML5 Canvas, and CSS.
 

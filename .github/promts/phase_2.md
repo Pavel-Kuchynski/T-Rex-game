@@ -1,5 +1,7 @@
 # Phase 2 Prompt: Core Game Engine
 
+Status: COMPLETED
+
 Implement only Phase 2 of the T-Rex game using the existing project skeleton.
 
 ## Scope

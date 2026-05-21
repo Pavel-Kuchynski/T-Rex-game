@@ -1,5 +1,7 @@
 # Phase 3 Prompt: Player (T-Rex) Mechanics
 
+Status: COMPLETED
+
 Implement only Phase 3 of the T-Rex game.
 
 ## Scope

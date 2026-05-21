@@ -1,5 +1,7 @@
 # Phase 6 Prompt: Input and UX
 
+Status: IN PROGRESS
+
 Implement only Phase 6 of the T-Rex game.
 
 ## Scope

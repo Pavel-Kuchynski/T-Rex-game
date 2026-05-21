@@ -1,5 +1,7 @@
 # Phase 5 Prompt: Collision, Scoring, and Difficulty
 
+Status: COMPLETED
+
 Implement only Phase 5 of the T-Rex game.
 
 ## Scope
