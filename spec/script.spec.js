@@ -1,5 +1,27 @@
+// Load DOM mock and script.js before running tests
+require('./helpers/setup.js');
+
 // ── Score Formatting Tests ────────────────────────────────────────────────
 describe('formatScore', () => {
+beforeEach(() => {
+  // Reset all game state before each test
+  score = 0;
+  bestScore = 0;
+  gameSpeed = GAME_SPEED_INIT;
+  state = STATE.IDLE;
+  accumulator = 0;
+  player.x = PLAYER_X;
+  player.y = PLAYER_FLOOR_Y;
+  player.vy = 0;
+  player.grounded = true;
+  player.animFrame = 0;
+  player.animTick = 0;
+  obstacles = [];
+  passedObstacles = [];
+  spawnTimer = 0;
+  spawnInterval = SPAWN_MIN;
+});
+
   it('should pad single digit to 5 chars', () => {
     expect(formatScore(5)).toBe('00005');
   });
@@ -31,6 +53,12 @@ describe('formatScore', () => {
 
 // ── Random Integer Tests ──────────────────────────────────────────────────
 describe('randomInt', () => {
+afterEach(() => {
+  score = 0;
+  obstacles = [];
+  passedObstacles = [];
+});
+
   it('should return integer within min and max bounds', () => {
     for (let i = 0; i < 100; i++) {
       const val = randomInt(1, 10);
