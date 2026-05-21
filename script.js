@@ -17,6 +17,22 @@ const JUMP_VY        = -14;                 // upward velocity on jump (px/tick)
 const GRAVITY        = 0.7;                 // downward acceleration (px/tick²)
 const ANIM_SPEED     = 8;                   // ticks between run-cycle frames
 
+// ── Obstacle Constants ────────────────────────────────────────────────────
+const GAME_SPEED_INIT  = 6;    // px per fixed tick at game start
+const SPAWN_MIN        = 60;   // min ticks between obstacle spawns
+const SPAWN_MAX        = 130;  // max ticks between obstacle spawns
+const BIRD_SCORE_THRESHOLD = 300; // score required before birds can appear
+
+// Obstacle type definitions: { key, w, h, spriteKeys, yOffset }
+// yOffset: how many px above ground the obstacle bottom sits (0 = on ground)
+const OBSTACLE_TYPES = [
+  { key: 'cactus_small_1', w: 17, h: 35, sprites: ['cactus_small_1'], yOffset: 0 },
+  { key: 'cactus_small_2', w: 17, h: 35, sprites: ['cactus_small_2'], yOffset: 0 },
+  { key: 'cactus_large_1', w: 25, h: 50, sprites: ['cactus_large_1'], yOffset: 0 },
+  { key: 'cactus_large_2', w: 25, h: 50, sprites: ['cactus_large_2'], yOffset: 0 },
+  { key: 'bird',           w: 46, h: 40, sprites: ['bird_flap_up', 'bird_flap_down'], yOffset: 60, birdOnly: true },
+];
+
 // ── Game States ───────────────────────────────────────────────────────────
 const STATE = Object.freeze({
   IDLE:      'idle',
@@ -37,14 +53,20 @@ const overlayMsg  = document.getElementById('overlay-message');
 const overlayBtn  = document.getElementById('overlay-btn');
 
 // ── Mutable Engine State ──────────────────────────────────────────────────
-let state     = STATE.IDLE;
-let rafId     = null;
-let lastTime  = 0;
+let state       = STATE.IDLE;
+let rafId       = null;
+let lastTime    = 0;
 let accumulator = 0;
 
 // ── Mutable Game Variables (reset on each new game) ───────────────────────
-let score     = 0;
-let bestScore = 0;
+let score      = 0;
+let bestScore  = 0;
+let gameSpeed  = GAME_SPEED_INIT;
+
+// ── Obstacle State ────────────────────────────────────────────────────────
+let obstacles    = [];   // active obstacle objects
+let spawnTimer   = 0;   // ticks until next spawn
+let spawnInterval = SPAWN_MIN; // current spawn interval (ticks)
 
 // ── Sprites ───────────────────────────────────────────────────────────────
 function loadSprite(src) {
@@ -54,9 +76,15 @@ function loadSprite(src) {
 }
 
 const sprites = {
-  run1: loadSprite('assets/sprites/trex_run_1.svg'),
-  run2: loadSprite('assets/sprites/trex_run_2.svg'),
-  jump: loadSprite('assets/sprites/trex_jump.svg'),
+  run1:          loadSprite('assets/sprites/trex_run_1.svg'),
+  run2:          loadSprite('assets/sprites/trex_run_2.svg'),
+  jump:          loadSprite('assets/sprites/trex_jump.svg'),
+  cactus_small_1: loadSprite('assets/sprites/cactus_small_1.svg'),
+  cactus_small_2: loadSprite('assets/sprites/cactus_small_2.svg'),
+  cactus_large_1: loadSprite('assets/sprites/cactus_large_1.svg'),
+  cactus_large_2: loadSprite('assets/sprites/cactus_large_2.svg'),
+  bird_flap_up:   loadSprite('assets/sprites/bird_flap_up.svg'),
+  bird_flap_down: loadSprite('assets/sprites/bird_flap_down.svg'),
 };
 
 // ── Player State ──────────────────────────────────────────────────────────
@@ -87,6 +115,79 @@ function showOverlay(message, btnLabel) {
 
 function hideOverlay() {
   overlay.classList.add('hidden');
+}
+
+// ── Obstacle Functions ───────────────────────────────────────────────────
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function pickObstacleType() {
+  // Filter out bird types until score threshold is reached
+  const pool = OBSTACLE_TYPES.filter(t => !t.birdOnly || score >= BIRD_SCORE_THRESHOLD);
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function spawnObstacle() {
+  const type = pickObstacleType();
+  const y    = GROUND_Y - type.h - type.yOffset;
+  obstacles.push({
+    x:         CANVAS_WIDTH,
+    y,
+    w:         type.w,
+    h:         type.h,
+    sprites:   type.sprites,
+    animFrame: 0,
+    animTick:  0,
+  });
+}
+
+function resetObstacles() {
+  obstacles    = [];
+  spawnTimer   = randomInt(SPAWN_MIN, SPAWN_MAX);
+  spawnInterval = SPAWN_MAX;
+  gameSpeed    = GAME_SPEED_INIT;
+}
+
+function updateObstacles() {
+  // Move all obstacles
+  for (const obs of obstacles) {
+    obs.x -= gameSpeed;
+    // Advance bird flap animation
+    if (obs.sprites.length > 1) {
+      obs.animTick++;
+      if (obs.animTick >= 12) {
+        obs.animTick  = 0;
+        obs.animFrame = 1 - obs.animFrame;
+      }
+    }
+  }
+
+  // Remove off-screen obstacles
+  obstacles = obstacles.filter(obs => obs.x + obs.w > 0);
+
+  // Spawn scheduler
+  spawnTimer--;
+  if (spawnTimer <= 0) {
+    spawnObstacle();
+    spawnInterval = randomInt(SPAWN_MIN, SPAWN_MAX);
+    spawnTimer    = spawnInterval;
+  }
+}
+
+function drawObstacle(obs) {
+  const key    = obs.sprites[obs.animFrame];
+  const sprite = sprites[key];
+  if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+    ctx.drawImage(sprite, Math.round(obs.x), Math.round(obs.y), obs.w, obs.h);
+  } else {
+    ctx.fillStyle = '#111';
+    ctx.fillRect(Math.round(obs.x), Math.round(obs.y), obs.w, obs.h);
+  }
+}
+
+function drawObstacles() {
+  for (const obs of obstacles) drawObstacle(obs);
 }
 
 // ── Player Functions ─────────────────────────────────────────────────────
@@ -164,6 +265,7 @@ function reset() {
   accumulator = 0;
   updateHUD();
   resetPlayer();
+  resetObstacles();
 }
 
 // ── Transitions ───────────────────────────────────────────────────────────
@@ -196,6 +298,7 @@ function fixedUpdate() {
   score += SCORE_PER_SEC * (FIXED_DT / 1000);
   updateHUD();
   updatePlayer();
+  updateObstacles();
 }
 
 // ── Render ────────────────────────────────────────────────────────────────
@@ -207,6 +310,7 @@ function render() {
   ctx.fillRect(0, CANVAS_HEIGHT - 2, CANVAS_WIDTH, 2);
 
   drawPlayer();
+  drawObstacles();
 }
 
 // ── Game Loop (semi-fixed timestep with accumulator) ──────────────────────
