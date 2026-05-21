@@ -1,0 +1,106 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #f7f7f7;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-family: monospace;
+  color: #222;
+}
+
+/* ── Wrapper ── */
+.game-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 800px;
+  padding: 16px;
+}
+
+/* ── HUD ── */
+.hud {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  align-self: flex-end;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.hud__label {
+  color: #888;
+}
+
+.hud__label--best {
+  margin-left: 16px;
+}
+
+.hud__value {
+  font-weight: bold;
+  color: #222;
+  min-width: 5ch;
+  text-align: right;
+}
+
+/* ── Canvas ── */
+#game-canvas {
+  display: block;
+  width: 100%;
+  max-width: 800px;
+  height: auto;
+  background: #fff;
+  border-bottom: 2px solid #222;
+  image-rendering: pixelated;
+}
+
+/* ── Overlay ── */
+.overlay {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  pointer-events: none;
+}
+
+.overlay.hidden {
+  display: none;
+}
+
+.overlay__message {
+  font-size: 18px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #444;
+}
+
+.overlay__btn {
+  padding: 8px 28px;
+  font-family: monospace;
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: #222;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.overlay__btn:hover {
+  background: #444;
+}
+
+.overlay__btn:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 3px;
+}
