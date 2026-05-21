@@ -23,6 +23,15 @@ const SPAWN_MIN        = 60;   // min ticks between obstacle spawns
 const SPAWN_MAX        = 130;  // max ticks between obstacle spawns
 const BIRD_SCORE_THRESHOLD = 300; // score required before birds can appear
 
+// ── Collision Constants ──────────────────────────────────────────────────
+const HITBOX_PAD_X = 6;  // px padding on left/right of player hitbox (fairness)
+const HITBOX_PAD_Y = 4;  // px padding on top/bottom of player hitbox
+
+// ── Difficulty Scaling Constants ─────────────────────────────────────────
+const SPEED_MAX            = 12;     // max px/tick (cap to prevent unplayable)
+const DIFFICULTY_RAMP_RATE = 0.002;  // speed increase per millisecond of play
+const OBSTACLE_PASS_BONUS  = 100;    // score bonus per obstacle safely passed
+
 // Obstacle type definitions: { key, w, h, spriteKeys, yOffset }
 // yOffset: how many px above ground the obstacle bottom sits (0 = on ground)
 const OBSTACLE_TYPES = [
@@ -64,9 +73,10 @@ let bestScore  = 0;
 let gameSpeed  = GAME_SPEED_INIT;
 
 // ── Obstacle State ────────────────────────────────────────────────────────
-let obstacles    = [];   // active obstacle objects
-let spawnTimer   = 0;   // ticks until next spawn
-let spawnInterval = SPAWN_MIN; // current spawn interval (ticks)
+let obstacles      = [];   // active obstacle objects
+let spawnTimer     = 0;    // ticks until next spawn
+let spawnInterval  = SPAWN_MIN; // current spawn interval (ticks)
+let passedObstacles = []; // track which obstacles have been passed for bonus scoring
 
 // ── Sprites ───────────────────────────────────────────────────────────────
 function loadSprite(src) {
@@ -143,10 +153,11 @@ function spawnObstacle() {
 }
 
 function resetObstacles() {
-  obstacles    = [];
-  spawnTimer   = randomInt(SPAWN_MIN, SPAWN_MAX);
-  spawnInterval = SPAWN_MAX;
-  gameSpeed    = GAME_SPEED_INIT;
+  obstacles       = [];
+  passedObstacles = [];
+  spawnTimer      = randomInt(SPAWN_MIN, SPAWN_MAX);
+  spawnInterval   = SPAWN_MAX;
+  gameSpeed       = GAME_SPEED_INIT;
 }
 
 function updateObstacles() {
@@ -163,8 +174,17 @@ function updateObstacles() {
     }
   }
 
-  // Remove off-screen obstacles
-  obstacles = obstacles.filter(obs => obs.x + obs.w > 0);
+  // Remove off-screen obstacles and award bonus for passing
+  for (let i = obstacles.length - 1; i >= 0; i--) {
+    const obs = obstacles[i];
+    if (obs.x + obs.w < PLAYER_X && !passedObstacles.includes(obs)) {
+      passedObstacles.push(obs);
+      score += OBSTACLE_PASS_BONUS;
+    }
+    if (obs.x + obs.w <= 0) {
+      obstacles.splice(i, 1);
+    }
+  }
 
   // Spawn scheduler
   spawnTimer--;
@@ -188,6 +208,35 @@ function drawObstacle(obs) {
 
 function drawObstacles() {
   for (const obs of obstacles) drawObstacle(obs);
+}
+
+// ── Collision and Difficulty Functions ───────────────────────────────────
+function getPlayerHitbox() {
+  return {
+    x: player.x + HITBOX_PAD_X,
+    y: player.y + HITBOX_PAD_Y,
+    w: PLAYER_W - HITBOX_PAD_X * 2,
+    h: PLAYER_H - HITBOX_PAD_Y * 2,
+  };
+}
+
+function checkCollisions() {
+  const ph = getPlayerHitbox();
+  for (const obs of obstacles) {
+    // AABB collision check
+    if (ph.x < obs.x + obs.w &&
+        ph.x + ph.w > obs.x &&
+        ph.y < obs.y + obs.h &&
+        ph.y + ph.h > obs.y) {
+      return true; // collision detected
+    }
+  }
+  return false;
+}
+
+function scaleDifficulty() {
+  // Smooth ramp: gameSpeed increases based on milliseconds elapsed
+  gameSpeed = Math.min(GAME_SPEED_INIT + (score / 100) * DIFFICULTY_RAMP_RATE * 1000, SPEED_MAX);
 }
 
 // ── Player Functions ─────────────────────────────────────────────────────
@@ -299,6 +348,12 @@ function fixedUpdate() {
   updateHUD();
   updatePlayer();
   updateObstacles();
+  scaleDifficulty();
+
+  // Check collisions
+  if (checkCollisions()) {
+    endGame();
+  }
 }
 
 // ── Render ────────────────────────────────────────────────────────────────
